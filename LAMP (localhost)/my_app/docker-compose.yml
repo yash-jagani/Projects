@@ -1,0 +1,63 @@
+services:
+  db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: blog_db
+      MYSQL_USER: username
+      MYSQL_PASSWORD: userpassword
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - lamp-network
+  www:
+    image: php:latest
+    restart: always
+    depends_on:
+      - db
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - lamp-network
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    networks:
+      - lamp-network
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: blog_db
+      MYSQL_USER: username
+      MYSQL_PASSWORD: userpassword
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "8080:80"
+    networks:
+      - lamp-network
+
+networks:
+  lamp-network:
+    driver: bridge
